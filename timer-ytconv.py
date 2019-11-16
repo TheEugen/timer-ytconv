@@ -66,9 +66,12 @@ class Status():
 def timerDone(window, status, usersound):
     status.setSoundStop(False)
     status.setTimerRunning(False)
+
     window['lefttext'].Update("Beendet um: " + time.strftime('%X'))
     window['righttext'].Update("")
+
     window.Deminimize()
+
     if usersound.endswith(('.mp3','.wav','.ogg')):
         pygame.mixer.music.play()
         while True:
@@ -81,23 +84,28 @@ def timerDone(window, status, usersound):
 
 def startTimer(window, status, usertime):
     status.setTimerRunning(True)
+
     saved_sound = EntryExists()
     if saved_sound != None:
         usersound = saved_sound.replace('#','')
     else:
         usersound = ''
+
     timer = Timer(usertime*60, timerDone, args = [window, status, usersound])
     timer.start()
     start_time = int(round(time.time() * 100))
     finish_time = start_time + usertime * 60 * 100
     window['lefttext'].Update("Gestartet um: " + time.strftime('%X'))
+
     disableButton(('Los','1m','2m','5m','10m','15m','30m','browser'), True, window)
     disableButton('Stopp', False, window)
     window.Minimize()
+
     if pygame.mixer.get_init() == None:
         pygame.mixer.init()
     if len(usersound) > 0 and usersound.endswith(('.mp3','.wav','.ogg')):
         pygame.mixer.music.load(usersound)
+
     return start_time, finish_time, timer
 
 def disableButton(button, boolean, window):
@@ -125,6 +133,7 @@ def EntryExists():
 def makeEntry(window, usersound):
     with open(__file__, 'r') as f:
         code = code_bak = f.read()
+
     with open(__file__, 'a') as f:
         try:
             f.write('#' + usersound + '\n')
@@ -136,13 +145,16 @@ def makeEntry(window, usersound):
 def resetEntrys(window):
     with open(__file__, 'r') as f:
         code = code_bak = f.read()
+
     with open(__file__, 'w') as f:
         try:
             edited_code = ''
             code = code.strip().splitlines()
+
             for line in code:
                 if not line.endswith(('.mp3','.wav','.ogg')):
                     edited_code += line + '\n'
+
             f.write(edited_code)
             window['righttext'].Update('Alle Einträge entfernt')
         except:
@@ -152,27 +164,84 @@ def resetEntrys(window):
 def removeLastEntry(window):
     with open(__file__, 'r') as f:
         code = code_bak = f.read()
+
     with open(__file__, 'w') as f:
         try:
             edited_code = ''
             code = code.strip().splitlines()
+
             if code[len(code) - 1].endswith(('.mp3','.wav','.ogg')):
                 code.remove(code[len(code) - 1])
+
             for line in code:
                 edited_code += line + '\n'
+
             f.write(edited_code)
             window['righttext'].Update("Letzten Eintrag entfernt")
         except:
             f.write(code_bak)
             window['righttext'].Update("Fehler aufgetreten")
 
+def killFFMPEG():
+    for proc in psutil.process_iter():
+        if proc.name() == 'ffmpeg-win64-v4.1.exe':
+            proc.kill()
 
-def convertToMp3(window, ytlink, status):
+def convertPlaylistToMp3(window, ytlink, status):
     status.setDl_conv(True)
+
     disableButton(('Download'), True, window)
     window['conv_out'].Update('Download läuft...')
+
     try:
-        video = pytube.YouTube(ytlink).streams.first().download()
+        video_titles = pytube.Playlist(ytlink).download_all(prefix_number = False)
+    except:
+        window['conv_out'].Update('Ungültiger Link')
+        window['ytlink'].Update('')
+        status.setDl_conv(False)
+        disableButton(('Download'), False, window)
+        return
+
+    i = 0
+    while i < len(video_titles):
+        video_titles[i] = os.getcwd() + '\\' + video_titles[i]
+        i += 1
+
+    for title in video_titles:
+        if os.path.isfile(title + '.mp3'):
+            window['conv_out'].Update('Datei bereits vorhanden')
+
+            continue
+        else:
+            window['conv_out'].Update('Konvertierung läuft...')
+            VideoFileClip(title + '.mp4').audio.write_audiofile(title + '.mp3', logger = None)
+
+    killFFMPEG()
+    for title in video_titles:
+        os.remove(title + '.mp4')
+    
+    window['conv_out'].Update('Vorgang erfolgreich')
+    window['ytlink'].Update('')
+    status.setDl_conv(False)
+    disableButton(('Download'), False, window)
+
+def convertToMp3(window, ytlink, status):
+    if '?list=' in ytlink:
+        convertPlaylistToMp3(window, ytlink, status)
+    else:
+        status.setDl_conv(True)
+        disableButton(('Download'), True, window)
+        window['conv_out'].Update('Download läuft...')
+
+        try:
+            video = pytube.YouTube(ytlink).streams.first().download()
+        except:
+            window['conv_out'].Update('Ungültiger Link')
+            window['ytlink'].Update('')
+            status.setDl_conv(False)
+            disableButton(('Download'), False, window)
+            return
+
         if os.path.isfile(video.title().replace('.Mp4','.mp3')):
                 window['conv_out'].Update('Datei bereits vorhanden')
                 window['ytlink'].Update('')
@@ -180,22 +249,16 @@ def convertToMp3(window, ytlink, status):
                 status.setDl_conv(False)
                 disableButton(('Download'), False, window)
                 return
-    except:
-        window['conv_out'].Update('Ungültiger Link')
+
+        window['conv_out'].Update('Konvertierung läuft...')
+        VideoFileClip(video).audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
+        killFFMPEG()
+        os.remove(video)
+
+        window['conv_out'].Update('Vorgang erfolgreich')
         window['ytlink'].Update('')
         status.setDl_conv(False)
         disableButton(('Download'), False, window)
-        return
-    window['conv_out'].Update('Konvertierung läuft...')
-    VideoFileClip(video).audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
-    for proc in psutil.process_iter():
-        if proc.name() == 'ffmpeg-win64-v4.1.exe':
-            proc.kill()
-    os.remove(video)
-    window['conv_out'].Update('Vorgang erfolgreich')
-    window['ytlink'].Update('')
-    status.setDl_conv(False)
-    disableButton(('Download'), False, window)
 
 def main():
     status = Status()
@@ -234,15 +297,6 @@ def main():
             except ValueError:
                 window['lefttext'].Update("Ungültige Eingabe")
                 window['righttext'].Update("")
-        elif event in ('Stopp'):
-            status.setSoundStop(True)
-            if status.getTimerRunning():
-                timer.cancel()
-                status.setTimerRunning(False)
-            window['lefttext'].Update("Dauer einstellen (in Minuten):")
-            window['righttext'].Update("Gestoppt um: " + time.strftime('%X'))
-            disableButton(('Los','1m','2m','5m','10m','15m','30m','browser', 'Download'), False, window)
-            disableButton('Stopp', True, window)
         elif event in ('1m'):
             start_time, finish_time, timer = startTimer(window, status, 1)
         elif event in ('2m'):
@@ -255,6 +309,15 @@ def main():
             start_time, finish_time, timer = startTimer(window, status, 15)
         elif event in ('30m'):
             start_time, finish_time, timer = startTimer(window, status, 30)
+        elif event in ('Stopp'):
+            status.setSoundStop(True)
+            if status.getTimerRunning():
+                timer.cancel()
+                status.setTimerRunning(False)
+            window['lefttext'].Update("Dauer einstellen (in Minuten):")
+            window['righttext'].Update("Gestoppt um: " + time.strftime('%X'))
+            disableButton(('Los','1m','2m','5m','10m','15m','30m','browser', 'Download'), False, window)
+            disableButton('Stopp', True, window)
         elif event in ('Last'):
             removeLastEntry(window)
         elif event in ('Reset'):
@@ -268,10 +331,12 @@ def main():
         elif event in ('Download'):
             t = Thread(target=convertToMp3, args=[window, values['ytlink'], status])
             t.start()
+
         if len(values['ytlink']) > 0 and status.getDl_conv() == False:
             disableButton('Download', False, window)
         else:
             disableButton('Download', True, window)
+
         if status.getTimerRunning() == True:
             remaining_time = round(finish_time - int(round(time.time() * 100)))
             window.Element('righttext').Update('{:02d}:{:02d}.{:02d}'.format((remaining_time // 100) // 60,
