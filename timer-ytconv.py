@@ -203,23 +203,19 @@ def convertPlaylistToMp3(window, ytlink, status):
         return
 
     i = 0
-    while i < len(video_titles):
-        video_titles[i] = os.getcwd() + '\\' + video_titles[i]
-        i += 1
 
     for title in video_titles:
-        if os.path.isfile(title + '.mp3'):
+        if os.path.isfile(title.replace('.mp4','.mp3')):
             window['conv_out'].Update('Datei bereits vorhanden')
-
             continue
         else:
             window['conv_out'].Update('Konvertierung läuft...')
-            VideoFileClip(title + '.mp4').audio.write_audiofile(title + '.mp3', logger = None)
+            VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
 
     killFFMPEG()
     for title in video_titles:
-        os.remove(title + '.mp4')
-    
+        os.remove(title)
+
     window['conv_out'].Update('Vorgang erfolgreich')
     window['ytlink'].Update('')
     status.setDl_conv(False)
