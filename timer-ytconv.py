@@ -196,7 +196,8 @@ def checkForFile(video_paths):
     return False
 
 def convertPlaylistToMp3(window, ytlink, status):
-    status.setDl_conv(True)
+    if not status.getDl_conv():
+        status.setDl_conv(True)
 
     disableButton(('Download'), True, window)
 
@@ -209,6 +210,8 @@ def convertPlaylistToMp3(window, ytlink, status):
         disableButton(('Download'), False, window)
         return
 
+    window['conv_out'].Update('Beziehe Video-URLs...')
+    window['ytlink'].Update('')
     pl.populate_video_urls()
     urls = pl.video_urls
     video_paths = []
@@ -222,6 +225,7 @@ def convertPlaylistToMp3(window, ytlink, status):
 
     video_titles = video_paths[:]
 
+    window['conv_out'].Update('Erstelle Dateipfad...')
     i = 0
     while i < len(video_paths):
         video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
@@ -234,11 +238,11 @@ def convertPlaylistToMp3(window, ytlink, status):
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
                 del(video_paths[i])
-
+            i += 1
         for url in urls:
             convertToMp3(window, url, status)
-
         return
+
     else:
         window['conv_out'].Update('Download läuft...')
 
@@ -257,12 +261,8 @@ def convertPlaylistToMp3(window, ytlink, status):
             i += 1
 
         for title in video_titles:
-            if os.path.isfile(title.replace('.mp4','mp3')):
-                window['conv_out'].Update('Datei bereits vorhanden')
-                continue
-            else:
-                window['conv_out'].Update('Konvertierung läuft...')
-                VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
+            window['conv_out'].Update('Konvertierung läuft...')
+            VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
 
     killFFMPEG()
     for title in video_titles:
@@ -277,7 +277,8 @@ def convertToMp3(window, ytlink, status):
     if '?list=' in ytlink:
         convertPlaylistToMp3(window, ytlink, status)
     else:
-        status.setDl_conv(True)
+        if not status.getDl_conv():
+            status.setDl_conv(True)
         disableButton(('Download'), True, window)
 
         try:
@@ -382,12 +383,12 @@ def main():
             t = Thread(target=convertToMp3, args=[window, values['ytlink'], status])
             t.start()
 
-        if len(values['ytlink']) > 0 and status.getDl_conv() == False:
+        if len(values['ytlink']) > 0 and not status.getDl_conv():
             disableButton('Download', False, window)
         else:
             disableButton('Download', True, window)
 
-        if status.getTimerRunning() == True:
+        if status.getTimerRunning():
             remaining_time = round(finish_time - int(round(time.time() * 100)))
             window.Element('righttext').Update('{:02d}:{:02d}.{:02d}'.format((remaining_time // 100) // 60,
                                                                       (remaining_time // 100) % 60,
