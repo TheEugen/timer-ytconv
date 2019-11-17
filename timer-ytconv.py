@@ -11,12 +11,14 @@ except ModuleNotFoundError:
     print("\nCould not find module, installing: PySimpleGUI\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PySimpleGUI'])
     import PySimpleGUI as sg
+
 try:
     import pygame
 except ModuleNotFoundError:
     print("\nCould not find module, installing: pygame\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pygame'])
     import pygame
+
 try:
     import pytube
 except ModuleNotFoundError:
@@ -187,30 +189,80 @@ def killFFMPEG():
         if proc.name() == 'ffmpeg-win64-v4.1.exe':
             proc.kill()
 
+def checkForFile(video_paths):
+    for v_path in video_paths:
+        if os.path.isfile(v_path):
+            return True
+    return False
+
 def convertPlaylistToMp3(window, ytlink, status):
     status.setDl_conv(True)
 
     disableButton(('Download'), True, window)
-    window['conv_out'].Update('Download läuft...')
 
     try:
-        video_titles = pytube.Playlist(ytlink).download_all(prefix_number = False)
+        pl = pytube.Playlist(ytlink)
     except:
-        window['conv_out'].Update('Ungültiger Link')
+        window['conv_out'].Update('Ungültiger Playlist-Link')
         window['ytlink'].Update('')
         status.setDl_conv(False)
         disableButton(('Download'), False, window)
         return
 
-    i = 0
+    pl.populate_video_urls()
+    urls = pl.video_urls
+    video_paths = []
 
-    for title in video_titles:
-        if os.path.isfile(title.replace('.mp4','.mp3')):
-            window['conv_out'].Update('Datei bereits vorhanden')
+    for url in urls:
+        try:
+            video_paths.append(pytube.YouTube(url).title)
+        except:
+            window['conv_out'].Update('Ungültiger Video-Link')
             continue
-        else:
-            window['conv_out'].Update('Konvertierung läuft...')
-            VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
+
+    video_titles = video_paths[:]
+
+    i = 0
+    while i < len(video_paths):
+        video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
+        i += 1
+
+    files_exist = checkForFile(video_paths)
+
+    if files_exist:
+        i = 0
+        while i < len(video_paths):
+            if os.path.isfile(video_paths[i]):
+                del(video_paths[i])
+
+        for url in urls:
+            convertToMp3(window, url, status)
+
+        return
+    else:
+        window['conv_out'].Update('Download läuft...')
+
+        try:
+            pytube.Playlist(ytlink).download_all(prefix_number = False)
+        except:
+            window['conv_out'].Update('Ungültiger Link')
+            window['ytlink'].Update('')
+            status.setDl_conv(False)
+            disableButton(('Download'), False, window)
+            return
+
+        i = 0
+        while i < len(video_titles):
+            video_titles[i] = os.getcwd() + '\\' + video_titles[i] + '.mp4'
+            i += 1
+
+        for title in video_titles:
+            if os.path.isfile(title.replace('.mp4','mp3')):
+                window['conv_out'].Update('Datei bereits vorhanden')
+                continue
+            else:
+                window['conv_out'].Update('Konvertierung läuft...')
+                VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
 
     killFFMPEG()
     for title in video_titles:
@@ -227,10 +279,9 @@ def convertToMp3(window, ytlink, status):
     else:
         status.setDl_conv(True)
         disableButton(('Download'), True, window)
-        window['conv_out'].Update('Download läuft...')
 
         try:
-            video = pytube.YouTube(ytlink).streams.first().download()
+            video = pytube.YouTube(ytlink)
         except:
             window['conv_out'].Update('Ungültiger Link')
             window['ytlink'].Update('')
@@ -238,13 +289,16 @@ def convertToMp3(window, ytlink, status):
             disableButton(('Download'), False, window)
             return
 
-        if os.path.isfile(video.title().replace('.Mp4','.mp3')):
+        video_path = os.getcwd() + '\\' + video.title
+        if os.path.isfile(video_path + '.mp3'):
                 window['conv_out'].Update('Datei bereits vorhanden')
                 window['ytlink'].Update('')
-                os.remove(video)
                 status.setDl_conv(False)
                 disableButton(('Download'), False, window)
                 return
+
+        window['conv_out'].Update('Download läuft...')
+        video = video.streams.first().download()
 
         window['conv_out'].Update('Konvertierung läuft...')
         VideoFileClip(video).audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
