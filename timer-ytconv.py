@@ -7,6 +7,9 @@ import sys
 import os
 try:
     import PySimpleGUI as sg
+    if sg.version < '4.6.0':
+        print("\nFound unsupported version, upgrading PySimpleGUI\n")
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'PySimpleGUI'])
 except ModuleNotFoundError:
     print("\nCould not find module, installing: PySimpleGUI\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PySimpleGUI'])
@@ -72,7 +75,7 @@ def timerDone(window, status, usersound):
     window['lefttext'].Update("Beendet um: " + time.strftime('%X'))
     window['righttext'].Update("")
 
-    window.Deminimize()
+    window.Normal()
 
     if usersound.endswith(('.mp3','.wav','.ogg')):
         pygame.mixer.music.play()
