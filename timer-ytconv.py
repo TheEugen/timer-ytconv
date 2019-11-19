@@ -53,6 +53,7 @@ class Status():
         self.soundstop = False
         self.timerrunning = False
         self.dl_conv = False
+        self.checked_for_file = False
 
     def setSoundStop(self, b):
         self.soundstop = b
@@ -71,6 +72,12 @@ class Status():
 
     def getDl_conv(self):
         return self.dl_conv
+
+    def setChecked_For_File(self, b):
+        self.checked_for_file = b
+
+    def getChecked_For_File(self):
+        return self.checked_for_file
 
 def timerDone(window, status, usersound):
     status.setSoundStop(False)
@@ -246,8 +253,10 @@ def convertPlaylistToMp3(window, ytlink, status):
             if os.path.isfile(video_paths[i]):
                 del(video_paths[i])
             i += 1
+        status.setChecked_For_File = True
         for url in urls:
             convertToMp3(window, url, status)
+        status.setChecked_For_File = False
         return
 
     else:
@@ -288,6 +297,7 @@ def convertToMp3(window, ytlink, status):
             status.setDl_conv(True)
         disableButton(('Download'), True, window)
 
+        window['conv_out'].Update('Prüfe ob Datei vorhanden...')
         try:
             video = pytube.YouTube(ytlink)
         except:
@@ -297,13 +307,14 @@ def convertToMp3(window, ytlink, status):
             disableButton(('Download'), False, window)
             return
 
-        video_path = os.getcwd() + '\\' + video.title
-        if os.path.isfile(video_path + '.mp3'):
-                window['conv_out'].Update('Datei bereits vorhanden')
-                window['ytlink'].Update('')
-                status.setDl_conv(False)
-                disableButton(('Download'), False, window)
-                return
+        if not status.getChecked_For_File():
+            video_path = os.getcwd() + '\\' + video.title
+            if os.path.isfile(video_path + '.mp3'):
+                    window['conv_out'].Update('Datei bereits vorhanden')
+                    window['ytlink'].Update('')
+                    status.setDl_conv(False)
+                    disableButton(('Download'), False, window)
+                    return
 
         window['conv_out'].Update('Download läuft...')
         video = video.streams.first().download()
