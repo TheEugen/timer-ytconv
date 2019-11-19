@@ -5,12 +5,6 @@ import winsound
 import subprocess
 import sys
 import os
-try:
-    import importlib
-except ModuleNotFoundError:
-    print("\nCould not find module, installing: importlib\n")
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'importlib'])
-    import importlib
 
 try:
     import PySimpleGUI as sg
