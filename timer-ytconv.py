@@ -6,10 +6,19 @@ import subprocess
 import sys
 import os
 try:
+    import importlib
+except ModuleNotFoundError:
+    print("\nCould not find module, installing: importlib\n")
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'importlib'])
+    import importlib
+
+try:
     import PySimpleGUI as sg
     if sg.version < '4.6.0':
         print("\nFound unsupported version, upgrading PySimpleGUI\n")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'PySimpleGUI'])
+        print("\nFinished upgrade, restarting program\n")
+        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
 except ModuleNotFoundError:
     print("\nCould not find module, installing: PySimpleGUI\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PySimpleGUI'])
