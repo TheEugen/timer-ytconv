@@ -3,8 +3,8 @@ from threading import Timer
 from threading import Thread
 import winsound
 import subprocess
-import sys
 import os
+import sys
 
 try:
     import PySimpleGUI as sg
@@ -12,7 +12,8 @@ try:
         print("\nFound unsupported version, upgrading PySimpleGUI\n")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'PySimpleGUI'])
         print("\nFinished upgrade, restarting program\n")
-        os.execl(sys.executable, os.path.abspath(__file__), *sys.argv)
+        subprocess.check_call([sys.executable, 'timer-ytconv.py'])
+        sys.exit()
 except ModuleNotFoundError:
     print("\nCould not find module, installing: PySimpleGUI\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PySimpleGUI'])
