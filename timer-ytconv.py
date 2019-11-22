@@ -79,6 +79,7 @@ class Status():
     def getChecked_For_File(self):
         return self.checked_for_file
 
+
 def timerDone(window, status, usersound):
     status.setSoundStop(False)
     status.setTimerRunning(False)
@@ -252,11 +253,25 @@ def convertPlaylistToMp3(window, ytlink, status):
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
                 del(video_paths[i])
+                del(urls[i])
             i += 1
+
         status.setChecked_For_File = True
         for url in urls:
             convertToMp3(window, url, status)
         status.setChecked_For_File = False
+
+        killFFMPEG()
+
+        i = 0
+        while i < len(video_paths):
+            video_paths[i].replace('.mp3', '.mp4')
+            i += 1
+
+        for vid in video_paths:
+            os.remove(vid)
+
+        disableButton(('Download'), False, window)
         return
 
     else:
@@ -293,21 +308,21 @@ def convertToMp3(window, ytlink, status):
     if '?list=' in ytlink:
         convertPlaylistToMp3(window, ytlink, status)
     else:
-        if not status.getDl_conv():
-            status.setDl_conv(True)
-        disableButton(('Download'), True, window)
-
-        window['conv_out'].Update('Prüfe ob Datei vorhanden...')
-        try:
-            video = pytube.YouTube(ytlink)
-        except:
-            window['conv_out'].Update('Ungültiger Link')
-            window['ytlink'].Update('')
-            status.setDl_conv(False)
-            disableButton(('Download'), False, window)
-            return
-
         if not status.getChecked_For_File():
+            if not status.getDl_conv():
+                status.setDl_conv(True)
+            disableButton(('Download'), True, window)
+
+            window['conv_out'].Update('Prüfe ob Datei vorhanden...')
+            try:
+                video = pytube.YouTube(ytlink)
+            except:
+                window['conv_out'].Update('Ungültiger Link')
+                window['ytlink'].Update('')
+                status.setDl_conv(False)
+                disableButton(('Download'), False, window)
+                return
+
             video_path = os.getcwd() + '\\' + video.title
             if os.path.isfile(video_path + '.mp3'):
                     window['conv_out'].Update('Datei bereits vorhanden')
@@ -315,19 +330,25 @@ def convertToMp3(window, ytlink, status):
                     status.setDl_conv(False)
                     disableButton(('Download'), False, window)
                     return
+        else:
+            video = pytube.YouTube(ytlink)
 
         window['conv_out'].Update('Download läuft...')
         video = video.streams.first().download()
 
         window['conv_out'].Update('Konvertierung läuft...')
         VideoFileClip(video).audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
-        killFFMPEG()
-        os.remove(video)
+
+        if not status.getChecked_For_File():
+            killFFMPEG()
+            os.remove(video)
 
         window['conv_out'].Update('Vorgang erfolgreich')
         window['ytlink'].Update('')
-        status.setDl_conv(False)
-        disableButton(('Download'), False, window)
+
+        if not status.getChecked_For_File():
+            status.setDl_conv(False)
+            disableButton(('Download'), False, window)
 
 def main():
     status = Status()
