@@ -242,6 +242,7 @@ def convertPlaylistToMp3(window, ytlink, status):
 
     if files_exist:
         i = 0
+        print(len(video_paths))
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
                 del(video_paths[i])
@@ -252,9 +253,6 @@ def convertPlaylistToMp3(window, ytlink, status):
         for url in urls:
             convertToMp3(window, url, status)
         status.setPl_conv(False)
-
-        for vid in video_paths:
-            os.remove(vid.replace('.mp3', '.mp4'))
 
     else:
         window['conv_out'].Update('Download läuft...')
@@ -267,23 +265,17 @@ def convertPlaylistToMp3(window, ytlink, status):
             status.setDl_conv(False)
             return
 
-        i = 0
-        while i < len(video_titles):
-            video_titles[i] = os.getcwd() + '\\' + video_titles[i] + '.mp4'
-            i += 1
-
         for vid in video_paths:
             window['conv_out'].Update('Konvertierung läuft...')
-            with VideoFileClip(title) as vfc:
+            with VideoFileClip(vid.replace('.mp3','.mp4')) as vfc:
                 vfc.audio.write_audiofile(vid, logger = None)
 
-killFFMPEG()
-for vid in video_paths:
-    os.remove(vid.replace('.mp3','.mp4'))
+    killFFMPEG()
+    for vid in video_paths:
+        os.remove(vid.replace('.mp3','.mp4'))
 
-window['conv_out'].Update('Vorgang erfolgreich')
-window['ytlink'].Update('')
-
+    window['conv_out'].Update('Vorgang erfolgreich')
+    window['ytlink'].Update('')
 
 def convertToMp3(window, ytlink, status):
     if not status.getDl_conv():
