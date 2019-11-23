@@ -211,11 +211,6 @@ def checkForFile(video_paths):
     return False
 
 def convertPlaylistToMp3(window, ytlink, status):
-    if not status.getDl_conv():
-        status.setDl_conv(True)
-
-    disableButton(('Download'), True, window)
-
     try:
         pl = pytube.Playlist(ytlink)
     except:
@@ -240,7 +235,6 @@ def convertPlaylistToMp3(window, ytlink, status):
 
     video_titles = video_paths[:]
 
-    window['conv_out'].Update('Erstelle Dateipfad...')
     i = 0
     while i < len(video_paths):
         video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
@@ -252,27 +246,25 @@ def convertPlaylistToMp3(window, ytlink, status):
         i = 0
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
+                del(video_titles[i])
                 del(video_paths[i])
                 del(urls[i])
             i += 1
 
-        status.setChecked_For_File = True
+        status.setChecked_For_File(True)
         for url in urls:
             convertToMp3(window, url, status)
-        status.setChecked_For_File = False
+        status.setChecked_For_File(False)
 
         killFFMPEG()
 
         i = 0
         while i < len(video_paths):
-            video_paths[i].replace('.mp3', '.mp4')
+            video_paths[i] = video_paths[i].replace('.mp3', '.mp4')
             i += 1
 
         for vid in video_paths:
             os.remove(vid)
-
-        disableButton(('Download'), False, window)
-        return
 
     else:
         window['conv_out'].Update('Download läuft...')
@@ -293,26 +285,26 @@ def convertPlaylistToMp3(window, ytlink, status):
 
         for title in video_titles:
             window['conv_out'].Update('Konvertierung läuft...')
-            VideoFileClip(title).audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
+            with VideoFileClip(title) as vfc:
+                vfc.audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
 
-    killFFMPEG()
-    for title in video_titles:
-        os.remove(title)
+        killFFMPEG()
+        for title in video_titles:
+            os.remove(title)
 
-    window['conv_out'].Update('Vorgang erfolgreich')
-    window['ytlink'].Update('')
-    status.setDl_conv(False)
-    disableButton(('Download'), False, window)
+window['conv_out'].Update('Vorgang erfolgreich')
+window['ytlink'].Update('')
+
 
 def convertToMp3(window, ytlink, status):
+    if not status.getDl_conv():
+        status.setDl_conv(True)
     if '?list=' in ytlink:
         convertPlaylistToMp3(window, ytlink, status)
+        status.setDl_conv(False)
     else:
         if not status.getChecked_For_File():
-            if not status.getDl_conv():
-                status.setDl_conv(True)
             disableButton(('Download'), True, window)
-
             window['conv_out'].Update('Prüfe ob Datei vorhanden...')
             try:
                 video = pytube.YouTube(ytlink)
@@ -336,8 +328,9 @@ def convertToMp3(window, ytlink, status):
         window['conv_out'].Update('Download läuft...')
         video = video.streams.first().download()
 
-        window['conv_out'].Update('Konvertierung läuft...')
-        VideoFileClip(video).audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
+        with VideoFileClip(video) as vfc:
+            window['conv_out'].Update('Konvertierung läuft...')
+            vfc.audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
 
         if not status.getChecked_For_File():
             killFFMPEG()
@@ -348,7 +341,7 @@ def convertToMp3(window, ytlink, status):
 
         if not status.getChecked_For_File():
             status.setDl_conv(False)
-            disableButton(('Download'), False, window)
+
 
 def main():
     status = Status()
