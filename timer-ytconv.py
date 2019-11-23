@@ -53,7 +53,7 @@ class Status():
         self.soundstop = False
         self.timerrunning = False
         self.dl_conv = False
-        self.checked_for_file = False
+        self.pl_conv = False
 
     def setSoundStop(self, b):
         self.soundstop = b
@@ -73,11 +73,11 @@ class Status():
     def getDl_conv(self):
         return self.dl_conv
 
-    def setChecked_For_File(self, b):
-        self.checked_for_file = b
+    def setPl_conv(self, b):
+        self.pl_conv = b
 
-    def getChecked_For_File(self):
-        return self.checked_for_file
+    def getPl_conv(self):
+        return self.pl_conv
 
 
 def timerDone(window, status, usersound):
@@ -233,8 +233,6 @@ def convertPlaylistToMp3(window, ytlink, status):
             window['conv_out'].Update('Ungültiger Video-Link')
             continue
 
-    video_titles = video_paths[:]
-
     i = 0
     while i < len(video_paths):
         video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
@@ -246,25 +244,17 @@ def convertPlaylistToMp3(window, ytlink, status):
         i = 0
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
-                del(video_titles[i])
                 del(video_paths[i])
                 del(urls[i])
             i += 1
 
-        status.setChecked_For_File(True)
+        status.setPl_conv(True)
         for url in urls:
             convertToMp3(window, url, status)
-        status.setChecked_For_File(False)
-
-        killFFMPEG()
-
-        i = 0
-        while i < len(video_paths):
-            video_paths[i] = video_paths[i].replace('.mp3', '.mp4')
-            i += 1
+        status.setPl_conv(False)
 
         for vid in video_paths:
-            os.remove(vid)
+            os.remove(vid.replace('.mp3', '.mp4'))
 
     else:
         window['conv_out'].Update('Download läuft...')
@@ -275,7 +265,6 @@ def convertPlaylistToMp3(window, ytlink, status):
             window['conv_out'].Update('Ungültiger Link')
             window['ytlink'].Update('')
             status.setDl_conv(False)
-            disableButton(('Download'), False, window)
             return
 
         i = 0
@@ -283,14 +272,14 @@ def convertPlaylistToMp3(window, ytlink, status):
             video_titles[i] = os.getcwd() + '\\' + video_titles[i] + '.mp4'
             i += 1
 
-        for title in video_titles:
+        for vid in video_paths:
             window['conv_out'].Update('Konvertierung läuft...')
             with VideoFileClip(title) as vfc:
-                vfc.audio.write_audiofile(title.replace('.mp4','.mp3'), logger = None)
+                vfc.audio.write_audiofile(vid, logger = None)
 
-        killFFMPEG()
-        for title in video_titles:
-            os.remove(title)
+killFFMPEG()
+for vid in video_paths:
+    os.remove(vid.replace('.mp3','.mp4'))
 
 window['conv_out'].Update('Vorgang erfolgreich')
 window['ytlink'].Update('')
@@ -303,7 +292,7 @@ def convertToMp3(window, ytlink, status):
         convertPlaylistToMp3(window, ytlink, status)
         status.setDl_conv(False)
     else:
-        if not status.getChecked_For_File():
+        if not status.getPl_conv():
             disableButton(('Download'), True, window)
             window['conv_out'].Update('Prüfe ob Datei vorhanden...')
             try:
@@ -332,14 +321,14 @@ def convertToMp3(window, ytlink, status):
             window['conv_out'].Update('Konvertierung läuft...')
             vfc.audio.write_audiofile(video.title().replace('.Mp4','.mp3'), logger = None)
 
-        if not status.getChecked_For_File():
+        if not status.getPl_conv():
             killFFMPEG()
             os.remove(video)
 
         window['conv_out'].Update('Vorgang erfolgreich')
         window['ytlink'].Update('')
 
-        if not status.getChecked_For_File():
+        if not status.getPl_conv():
             status.setDl_conv(False)
 
 
