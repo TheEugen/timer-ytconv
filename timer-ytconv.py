@@ -242,7 +242,6 @@ def convertPlaylistToMp3(window, ytlink, status):
 
     if files_exist:
         i = 0
-        print(len(video_paths))
         while i < len(video_paths):
             if os.path.isfile(video_paths[i]):
                 del(video_paths[i])
@@ -280,6 +279,7 @@ def convertPlaylistToMp3(window, ytlink, status):
 def convertToMp3(window, ytlink, status):
     if not status.getDl_conv():
         status.setDl_conv(True)
+
     if '?list=' in ytlink:
         convertPlaylistToMp3(window, ytlink, status)
         status.setDl_conv(False)
