@@ -20,11 +20,11 @@ except ModuleNotFoundError:
     import PySimpleGUI as sg
 
 try:
-    import pygame
+    from pygame import mixer
 except ModuleNotFoundError:
     print("\nCould not find module, installing: pygame\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pygame'])
-    import pygame
+    from pygame import mixer
 
 try:
     import pytube
@@ -90,10 +90,10 @@ def timerDone(window, status, usersound):
     window.Normal()
 
     if usersound.endswith(('.mp3','.wav','.ogg')):
-        pygame.mixer.music.play()
+        mixer.music.play()
         while True:
             if status.getSoundStop() == True:
-                pygame.mixer.music.stop()
+                mixer.music.stop()
                 break
     else:
         while status.getSoundStop() == False:
@@ -118,10 +118,10 @@ def startTimer(window, status, usertime):
     disableButton('Stopp', False, window)
     window.Minimize()
 
-    if pygame.mixer.get_init() == None:
-        pygame.mixer.init()
+    if mixer.get_init() == None:
+        mixer.init()
     if len(usersound) > 0 and usersound.endswith(('.mp3','.wav','.ogg')):
-        pygame.mixer.music.load(usersound)
+        mixer.music.load(usersound)
 
     return start_time, finish_time, timer
 
@@ -228,15 +228,15 @@ def convertPlaylistToMp3(window, ytlink, status):
 
     for url in urls:
         try:
-            video_paths.append(pytube.YouTube(url).title)
+            video_paths.append(os.getcwd() + '\\' + pytube.YouTube(url).title + '.mp3')
         except:
             window['conv_out'].Update('Ungültiger Video-Link')
             continue
 
-    i = 0
-    while i < len(video_paths):
-        video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
-        i += 1
+    #i = 0
+    #while i < len(video_paths):
+    #    video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
+    #    i += 1
 
     files_exist = checkForFile(video_paths)
 
@@ -264,8 +264,8 @@ def convertPlaylistToMp3(window, ytlink, status):
             status.setDl_conv(False)
             return
 
+        window['conv_out'].Update('Konvertierung läuft...')
         for vid in video_paths:
-            window['conv_out'].Update('Konvertierung läuft...')
             with VideoFileClip(vid.replace('.mp3','.mp4')) as vfc:
                 vfc.audio.write_audiofile(vid, logger = None)
 
@@ -282,10 +282,8 @@ def convertToMp3(window, ytlink, status):
 
     if '?list=' in ytlink:
         convertPlaylistToMp3(window, ytlink, status)
-        status.setDl_conv(False)
     else:
         if not status.getPl_conv():
-            disableButton(('Download'), True, window)
             window['conv_out'].Update('Prüfe ob Datei vorhanden...')
             try:
                 video = pytube.YouTube(ytlink)
@@ -320,8 +318,8 @@ def convertToMp3(window, ytlink, status):
         window['conv_out'].Update('Vorgang erfolgreich')
         window['ytlink'].Update('')
 
-        if not status.getPl_conv():
-            status.setDl_conv(False)
+    if not status.getPl_conv():
+        status.setDl_conv(False)
 
 
 def main():
@@ -407,8 +405,9 @@ def main():
                                                                       (remaining_time // 100) % 60,
                                                                       remaining_time % 100))
 
-    if pygame.mixer.get_init() != None:
-        pygame.mixer.quit()
+    if mixer.get_init() != None:
+        mixer.quit()
     window.close()
 
 main()
+#D:/Musik/xKore Ft. Zoe & Naomi - Need You [Centra 100BPM Remix] [HQ].mp3
