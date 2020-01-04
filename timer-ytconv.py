@@ -8,16 +8,18 @@ import sys
 
 try:
     import PySimpleGUI as sg
-    if sg.version < '4.6.0':
+    if sg.version < '4.14.1':
         print("\nFound unsupported version, upgrading PySimpleGUI\n")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'PySimpleGUI'])
         print("\nFinished upgrade, restarting program\n")
-        subprocess.check_call([sys.executable, 'timer-ytconv.py'])
+        subprocess.check_call([sys.executable, __file__])
         sys.exit()
 except ModuleNotFoundError:
     print("\nCould not find module, installing: PySimpleGUI\n")
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'PySimpleGUI'])
     import PySimpleGUI as sg
+
+sg.change_look_and_feel('Topanga')
 
 try:
     from pygame import mixer
@@ -233,11 +235,6 @@ def convertPlaylistToMp3(window, ytlink, status):
             window['conv_out'].Update('Ungültiger Video-Link')
             continue
 
-    #i = 0
-    #while i < len(video_paths):
-    #    video_paths[i] = os.getcwd() + '\\' + video_paths[i] + '.mp3'
-    #    i += 1
-
     files_exist = checkForFile(video_paths)
 
     if files_exist:
@@ -346,6 +343,7 @@ def main():
 
     while (True):
         event, values = window.Read(timeout=30)
+        cpu_percent = psutil.cpu_percent()
         if event in (None, 'Exit'):
             if not status.getSoundStop():
                 status.setSoundStop(True)
@@ -404,6 +402,9 @@ def main():
             window.Element('righttext').Update('{:02d}:{:02d}.{:02d}'.format((remaining_time // 100) // 60,
                                                                       (remaining_time // 100) % 60,
                                                                       remaining_time % 100))
+
+        if not status.getDl_conv():
+            window.Element('conv_out').Update(f'CPU {cpu_percent:02.0f}%')
 
     if mixer.get_init() != None:
         mixer.quit()
