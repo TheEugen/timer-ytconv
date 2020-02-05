@@ -32,7 +32,7 @@ try:
     import pytube
 except ModuleNotFoundError:
     print("\nCould not find module, installing: pytube\n")
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pytube'])
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'pytube3'])
     import pytube
 
 try:
